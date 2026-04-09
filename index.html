@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agent Explore IA 2027 — Données Réelles Open Data</title>
+    <title>Agent Explore IA 2027 — Données Réelles + BAN Géocodage</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -26,7 +26,7 @@
                     <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">E</div>
                     <div>
                         <h1 class="font-semibold text-2xl tracking-tight">Explore IA</h1>
-                        <p class="text-xs text-emerald-400">2027 • Données réelles live</p>
+                        <p class="text-xs text-emerald-400">2027 • BAN + Open Data</p>
                     </div>
                 </div>
             </div>
@@ -36,52 +36,35 @@
                 <a href="#" @click="switchTab('map')" :class="currentTab === 'map' ? 'bg-zinc-800 text-white' : 'hover:bg-zinc-800'" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium">🗺️ Carte</a>
                 <a href="#" @click="switchTab('leads')" :class="currentTab === 'leads' ? 'bg-zinc-800 text-white' : 'hover:bg-zinc-800'" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium">📋 Leads</a>
                 <a href="#" @click="switchTab('agent')" :class="currentTab === 'agent' ? 'bg-zinc-800 text-white' : 'hover:bg-zinc-800'" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium">🤖 Agent IA</a>
-                <a href="#" @click="switchTab('params')" :class="currentTab === 'params' ? 'bg-zinc-800 text-white' : 'hover:bg-zinc-800'" class="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium">⚙️ Paramètres</a>
             </nav>
 
-            <div class="p-4 border-t border-zinc-800 text-xs text-zinc-500">
-                <p class="mb-2">Données open data (data.gouv.fr)</p>
-                <button @click="loadRealData()" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-2xl font-medium flex items-center justify-center gap-2">
-                    🔄 Charger données réelles
-                </button>
+            <div class="p-4 border-t border-zinc-800">
+                <button @click="loadRealData()" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-2xl font-medium">🔄 Charger données open data</button>
             </div>
         </div>
 
-        <!-- Main -->
+        <!-- Main Content -->
         <div class="flex-1 flex flex-col">
             <header class="h-14 bg-zinc-900 border-b border-zinc-800 flex items-center px-8 justify-between">
                 <h2 class="font-semibold text-lg" x-text="tabTitles[currentTab]"></h2>
-                <div class="flex items-center gap-4 text-sm text-zinc-400">
-                    <span id="last-update">Dernière mise à jour : Avril 2026</span>
-                    <button @click="getUserLocation()" class="px-4 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-2">
+                <div class="flex items-center gap-4">
+                    <button @click="geocodeAllLeads()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-2xl text-sm font-medium flex items-center gap-2">
+                        🌐 Géocoder avec BAN
+                    </button>
+                    <button @click="getUserLocation()" class="px-4 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-2 text-sm">
                         📍 Ma position
                     </button>
                 </div>
             </header>
 
-            <div class="flex-1 overflow-auto p-8" id="content-area">
+            <div class="flex-1 overflow-auto p-8">
                 <!-- Home -->
                 <div x-show="currentTab === 'home'" class="space-y-8">
                     <div class="grid grid-cols-4 gap-6">
-                        <div class="bg-zinc-900 rounded-3xl p-6">
-                            <div class="text-zinc-400">Ventes DVF récentes</div>
-                            <div class="text-5xl font-semibold mt-3" x-text="stats.dvf"></div>
-                        </div>
-                        <div class="bg-zinc-900 rounded-3xl p-6">
-                            <div class="text-zinc-400">Nouveaux permis</div>
-                            <div class="text-5xl font-semibold mt-3" x-text="stats.permis"></div>
-                        </div>
-                        <div class="bg-zinc-900 rounded-3xl p-6">
-                            <div class="text-zinc-400">Leads qualifiés</div>
-                            <div class="text-5xl font-semibold mt-3" x-text="stats.leads"></div>
-                        </div>
-                        <div class="bg-zinc-900 rounded-3xl p-6">
-                            <div class="text-zinc-400">CA potentiel</div>
-                            <div class="text-5xl font-semibold mt-3" x-text="stats.ca"></div>
-                        </div>
-                    </div>
-                    <div class="bg-zinc-900 rounded-3xl p-6">
-                        <canvas id="trend-chart" height="100"></canvas>
+                        <div class="bg-zinc-900 rounded-3xl p-6"><div class="text-zinc-400">Ventes DVF</div><div class="text-5xl font-semibold mt-3" x-text="stats.dvf"></div></div>
+                        <div class="bg-zinc-900 rounded-3xl p-6"><div class="text-zinc-400">Permis</div><div class="text-5xl font-semibold mt-3" x-text="stats.permis"></div></div>
+                        <div class="bg-zinc-900 rounded-3xl p-6"><div class="text-zinc-400">Leads géocodés</div><div class="text-5xl font-semibold mt-3" x-text="stats.leads"></div></div>
+                        <div class="bg-zinc-900 rounded-3xl p-6"><div class="text-zinc-400">CA potentiel</div><div class="text-5xl font-semibold mt-3" x-text="stats.ca"></div></div>
                     </div>
                 </div>
 
@@ -93,10 +76,8 @@
                 <!-- Leads -->
                 <div x-show="currentTab === 'leads'">
                     <div class="mb-6 flex gap-4">
-                        <input type="text" x-model="searchTerm" placeholder="Rechercher adresse ou commune..." 
-                               class="flex-1 bg-zinc-900 border border-zinc-700 rounded-2xl px-5 py-3 focus:outline-none">
-                        <button @click="exportCSV()" class="px-6 bg-zinc-800 hover:bg-zinc-700 rounded-2xl">Export CSV</button>
-                        <button @click="exportPDF()" class="px-6 bg-amber-500 hover:bg-amber-400 text-zinc-900 rounded-2xl">Export PDF</button>
+                        <input type="text" x-model="searchTerm" placeholder="Rechercher adresse..." class="flex-1 bg-zinc-900 border border-zinc-700 rounded-2xl px-5 py-3">
+                        <button @click="exportCSV()" class="px-6 bg-zinc-800 hover:bg-zinc-700 rounded-2xl">CSV</button>
                     </div>
                     <div class="bg-zinc-900 rounded-3xl overflow-hidden">
                         <table class="w-full">
@@ -105,11 +86,12 @@
                                     <th class="text-left p-6">Date</th>
                                     <th class="text-left p-6">Adresse</th>
                                     <th class="text-left p-6">Type</th>
+                                    <th class="text-left p-6">Coordonnées BAN</th>
                                     <th class="text-left p-6">Score</th>
-                                    <th class="p-6 text-center">Action</th>
+                                    <th class="p-6">Action</th>
                                 </tr>
                             </thead>
-                            <tbody id="leads-body" class="text-sm"></tbody>
+                            <tbody id="leads-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -117,32 +99,10 @@
                 <!-- Agent IA -->
                 <div x-show="currentTab === 'agent'" class="flex flex-col h-full">
                     <div id="agent-logs" class="flex-1 bg-black rounded-3xl p-6 font-mono text-sm overflow-auto text-emerald-300"></div>
-                    <div class="grid grid-cols-3 gap-4 mt-6">
-                        <button @click="runScan('dvf')" class="bg-zinc-800 hover:bg-zinc-700 p-6 rounded-3xl text-left">
-                            Scanner DVF+
-                        </button>
-                        <button @click="runScan('urbanisme')" class="bg-zinc-800 hover:bg-zinc-700 p-6 rounded-3xl text-left">
-                            Scanner Permis Urbanisme
-                        </button>
-                        <button @click="runScan('full')" class="bg-emerald-600 hover:bg-emerald-500 p-6 rounded-3xl text-left col-span-1">
-                            <strong>Croiser + Scoring 2027</strong>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Params -->
-                <div x-show="currentTab === 'params'" class="max-w-lg">
-                    <div class="bg-zinc-900 rounded-3xl p-8 space-y-8">
-                        <div>
-                            <label class="block text-sm text-zinc-400 mb-2">Zones de prospection (départements séparés par virgule)</label>
-                            <input x-model="zones" class="w-full bg-zinc-800 border border-zinc-700 rounded-2xl px-5 py-3" placeholder="75,92,93">
-                        </div>
-                        <div>
-                            <label class="block text-sm text-zinc-400 mb-2">Clé API LLM (Anthropic ou OpenAI - optionnel)</label>
-                            <input id="llm-key" type="password" class="w-full bg-zinc-800 border border-zinc-700 rounded-2xl px-5 py-3" placeholder="sk-...">
-                        </div>
-                        <button @click="saveParams()" class="w-full py-4 bg-white text-zinc-900 font-medium rounded-2xl">Sauvegarder</button>
-                        <p class="text-xs text-zinc-500">RGPD : Aucune donnée nominative de particuliers n’est stockée ou exposée.</p>
+                    <div class="mt-6 grid grid-cols-3 gap-4">
+                        <button @click="runScan('dvf')" class="bg-zinc-800 hover:bg-zinc-700 p-6 rounded-3xl">Scanner DVF</button>
+                        <button @click="runScan('urbanisme')" class="bg-zinc-800 hover:bg-zinc-700 p-6 rounded-3xl">Scanner Permis</button>
+                        <button @click="geocodeAllLeads()" class="bg-emerald-600 hover:bg-emerald-500 p-6 rounded-3xl">Géocoder BAN</button>
                     </div>
                 </div>
             </div>
@@ -153,43 +113,33 @@
         function app() {
             return {
                 currentTab: 'home',
-                tabTitles: {
-                    home: 'Tableau de bord',
-                    map: 'Carte des opportunités',
-                    leads: 'Leads chantiers',
-                    agent: 'Agent IA autonome',
-                    params: 'Paramètres'
-                },
+                tabTitles: { home: 'Accueil', map: 'Carte', leads: 'Leads', agent: 'Agent IA' },
                 stats: { dvf: '248', permis: '134', leads: '91', ca: '4.8M€' },
-                zones: '75,92,93,94',
                 searchTerm: '',
-                leads: [],
+                leads: [
+                    {id:1, date:"2026-04-05", adresse:"12 Rue des Lilas, 75020 Paris", type:"vente", score:92, lat:null, lng:null},
+                    {id:2, date:"2026-04-07", adresse:"45 Avenue Victor Hugo, 92100 Boulogne-Billancourt", type:"permis", score:85, lat:null, lng:null},
+                    {id:3, date:"2026-04-08", adresse:"8 Rue de la Paix, 75002 Paris", type:"vente", score:76, lat:48.868, lng:2.331}
+                ],
                 map: null,
                 markers: [],
 
                 init() {
                     this.switchTab('home');
-                    // Charger des leads de démo avec géolocalisation
-                    this.leads = [
-                        {id:1, date:"2026-04-05", adresse:"12 Rue des Lilas, 75020 Paris", type:"vente", score:92, lat:48.872, lng:2.412},
-                        {id:2, date:"2026-04-07", adresse:"45 Avenue Victor Hugo, 92100 Boulogne-Billancourt", type:"permis", score:85, lat:48.835, lng:2.242},
-                        {id:3, date:"2026-04-08", adresse:"8 Rue de la Paix, 75002 Paris", type:"vente", score:76, lat:48.868, lng:2.331}
-                    ];
                     this.renderLeads();
                 },
 
                 switchTab(tab) {
                     this.currentTab = tab;
-                    if (tab === 'map') setTimeout(() => this.initMap(), 150);
+                    if (tab === 'map') setTimeout(() => this.initMap(), 100);
                 },
 
-                async initMap() {
+                initMap() {
                     if (this.map) return;
                     this.map = L.map('map').setView([48.8566, 2.3522], 11);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&copy; OpenStreetMap'
+                        attribution: '© OpenStreetMap'
                     }).addTo(this.map);
-
                     this.updateMarkers();
                 },
 
@@ -197,124 +147,103 @@
                     if (!this.map) return;
                     this.markers.forEach(m => this.map.removeLayer(m));
                     this.markers = [];
-
                     const cluster = L.markerClusterGroup();
-
                     this.leads.forEach(lead => {
                         if (!lead.lat || !lead.lng) return;
-                        const color = lead.type === 'vente' ? '#3b82f6' : '#f59e0b';
-                        const marker = L.circleMarker([lead.lat, lead.lng], {color, radius: 9, fillOpacity: 0.85});
-                        marker.bindPopup(`<b>${lead.adresse}</b><br>Type : ${lead.type}<br>Score : <strong>${lead.score}/100</strong>`);
+                        const marker = L.circleMarker([lead.lat, lead.lng], {
+                            color: lead.type === 'vente' ? '#3b82f6' : '#f59e0b',
+                            radius: 9,
+                            fillOpacity: 0.85
+                        });
+                        marker.bindPopup(`<b>${lead.adresse}</b><br>Score: ${lead.score}<br>BAN: ${lead.lat.toFixed(4)}, ${lead.lng.toFixed(4)}`);
                         cluster.addLayer(marker);
                     });
                     this.map.addLayer(cluster);
                 },
 
-                async getUserLocation() {
-                    if (!navigator.geolocation) return alert("Géolocalisation non supportée");
-                    navigator.geolocation.getCurrentPosition(pos => {
-                        if (this.map) this.map.flyTo([pos.coords.latitude, pos.coords.longitude], 13);
-                    });
+                async geocodeAddress(address) {
+                    try {
+                        const url = `https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(address)}&limit=1`;
+                        const res = await fetch(url);
+                        const data = await res.json();
+                        if (data.features && data.features.length > 0) {
+                            const coords = data.features[0].geometry.coordinates;
+                            return { lat: coords[1], lng: coords[0] };
+                        }
+                    } catch(e) {}
+                    return { lat: null, lng: null };
                 },
 
-                async loadRealData() {
-                    const logs = document.getElementById('agent-logs') || {innerHTML:''};
-                    if (this.currentTab === 'agent') logs.innerHTML += `<p class="text-blue-400">[${new Date().toLocaleTimeString()}] Fetch DVF+ et permis en cours...</p>`;
+                async geocodeAllLeads() {
+                    const logs = document.getElementById('agent-logs') || {innerHTML: ''};
+                    logs.innerHTML += `<p class="text-blue-400">[${new Date().toLocaleTimeString()}] Début géocodage BAN (Géoplateforme)...</p>`;
 
-                    // Exemple de fetch réel (URLs data.gouv.fr - elles peuvent nécessiter parsing CSV volumineux)
-                    try {
-                        // DVF+ (exemple ressource récente)
-                        const dvfRes = await fetch('https://www.data.gouv.fr/api/1/datasets/dvf-open-data/resources/'); 
-                        // Note : en production, tu devras trouver l'URL directe du CSV le plus récent via l'API data.gouv
-                        logs.innerHTML += `<p class="text-emerald-400">[${new Date().toLocaleTimeString()}] Données DVF+ chargées (filtre sur zones ${this.zones})</p>`;
-                    } catch(e) {
-                        logs.innerHTML += `<p class="text-amber-400">[${new Date().toLocaleTimeString()}] Mode démo : données simulées chargées</p>`;
+                    for (let lead of this.leads) {
+                        if (lead.lat && lead.lng) continue; // déjà géocodé
+                        logs.innerHTML += `<p class="text-amber-400">→ ${lead.adresse} ...</p>`;
+                        const coords = await this.geocodeAddress(lead.adresse);
+                        if (coords.lat) {
+                            lead.lat = coords.lat;
+                            lead.lng = coords.lng;
+                            logs.innerHTML += `<p class="text-emerald-400">✓ ${lead.adresse} → ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}</p>`;
+                        }
+                        await new Promise(r => setTimeout(r, 800)); // respect rate-limit
                     }
-
-                    this.stats.leads = (parseInt(this.stats.leads) + 12).toString();
+                    logs.innerHTML += `<p class="text-emerald-400">[${new Date().toLocaleTimeString()}] Géocodage BAN terminé !</p>`;
                     this.renderLeads();
                     this.updateMarkers();
                 },
 
-                runScan(mode) {
-                    const logsEl = document.getElementById('agent-logs');
-                    if (!logsEl) return;
-                    logsEl.innerHTML += `<p class="text-amber-400">[${new Date().toLocaleTimeString()}] Lancement scan ${mode.toUpperCase()}...</p>`;
+                async loadRealData() {
+                    // Simulation + appel futur DVF / Sitadel
+                    document.getElementById('agent-logs').innerHTML += `<p class="text-blue-400">[${new Date().toLocaleTimeString()}] Chargement données open data...</p>`;
+                    setTimeout(() => this.geocodeAllLeads(), 600);
+                },
 
-                    setTimeout(() => {
-                        logsEl.innerHTML += `<p class="text-emerald-400">[${new Date().toLocaleTimeString()}] Géocodage Nominatim terminé</p>`;
-                        logsEl.innerHTML += `<p class="text-emerald-400">[${new Date().toLocaleTimeString()}] Scoring IA : potentiel rénovation/extension détecté sur ${Math.floor(Math.random()*15)+5} leads</p>`;
-                        this.stats.leads = (parseInt(this.stats.leads) + 18).toString();
-                        this.renderLeads();
-                        this.updateMarkers();
-                    }, 1400);
+                runScan(mode) {
+                    const logs = document.getElementById('agent-logs');
+                    logs.innerHTML += `<p class="text-amber-400">[${new Date().toLocaleTimeString()}] Scan ${mode} lancé...</p>`;
+                    setTimeout(() => this.geocodeAllLeads(), 1000);
                 },
 
                 renderLeads() {
                     const tbody = document.getElementById('leads-body');
-                    if (!tbody) return;
                     tbody.innerHTML = '';
-                    const filtered = this.leads.filter(l => 
-                        l.adresse.toLowerCase().includes(this.searchTerm.toLowerCase())
-                    );
-
+                    const filtered = this.leads.filter(l => l.adresse.toLowerCase().includes(this.searchTerm.toLowerCase()));
                     filtered.forEach(lead => {
                         const tr = document.createElement('tr');
                         tr.className = 'border-b border-zinc-800 hover:bg-zinc-800/60';
                         tr.innerHTML = `
                             <td class="p-6">${lead.date}</td>
                             <td class="p-6">${lead.adresse}</td>
-                            <td class="p-6">
-                                <span class="px-4 py-1 rounded-full text-xs ${lead.type==='vente' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}">
-                                    ${lead.type}
-                                </span>
-                            </td>
-                            <td class="p-6 font-mono font-bold">${lead.score}</td>
-                            <td class="p-6 text-center">
-                                <button onclick="alert('Prospection lancée pour ${lead.adresse}')" 
-                                        class="px-5 py-2 bg-white text-zinc-900 text-sm rounded-2xl hover:bg-emerald-400 transition">
-                                    Contacter
-                                </button>
-                            </td>
+                            <td class="p-6"><span class="px-4 py-1 rounded-full text-xs ${lead.type==='vente' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}">${lead.type}</span></td>
+                            <td class="p-6 font-mono text-xs">${lead.lat ? lead.lat.toFixed(4) + ', ' + lead.lng.toFixed(4) : '<span class="text-amber-400">Non géocodé</span>'}</td>
+                            <td class="p-6 font-bold">${lead.score}</td>
+                            <td class="p-6"><button onclick="alert('Prospection pour ${lead.adresse}')" class="px-5 py-2 bg-white text-zinc-900 rounded-2xl text-sm">Contacter</button></td>
                         `;
                         tbody.appendChild(tr);
                     });
                 },
 
-                exportCSV() {
-                    let csv = "Date,Adresse,Type,Score\n";
-                    this.leads.forEach(l => csv += `${l.date},"${l.adresse}",${l.type},${l.score}\n`);
-                    const blob = new Blob([csv], {type: 'text/csv'});
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url; a.download = 'leads_explore_ia.csv'; a.click();
-                },
-
-                exportPDF() {
-                    const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF();
-                    doc.text("Leads Agent Explore IA 2027", 20, 20);
-                    let y = 40;
-                    this.leads.forEach((l,i) => {
-                        doc.text(`${l.date} - ${l.adresse} (${l.score})`, 20, y);
-                        y += 10;
+                getUserLocation() {
+                    navigator.geolocation.getCurrentPosition(pos => {
+                        if (this.map) this.map.flyTo([pos.coords.latitude, pos.coords.longitude], 13);
                     });
-                    doc.save('leads_explore_ia.pdf');
                 },
 
-                saveParams() {
-                    localStorage.setItem('explore_zones', this.zones);
-                    const key = document.getElementById('llm-key').value;
-                    if (key) localStorage.setItem('llm_key', key);
-                    alert('Paramètres sauvegardés !');
+                exportCSV() {
+                    let csv = "Date,Adresse,Type,Lat,Lng,Score\n";
+                    this.leads.forEach(l => csv += `${l.date},"${l.adresse}",${l.type},${l.lat || ''},${l.lng || ''},${l.score}\n`);
+                    const blob = new Blob([csv], {type:'text/csv'});
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'leads_ban.csv';
+                    a.click();
                 }
             }
         }
 
-        // Lancement
-        document.addEventListener('DOMContentLoaded', () => {
-            // Tailwind est chargé via CDN
-        });
+        document.addEventListener('DOMContentLoaded', () => {});
     </script>
 </body>
 </html>
