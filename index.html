@@ -1,0 +1,306 @@
+```html id="x7p2k"
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Explore IA v2 – PRO</title>
+
+<!-- CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/alpinejs" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<style>
+body { background:#0f172a; color:#e2e8f0; }
+.sidebar { background:#020617; }
+.card { background:#020617; border:1px solid #1e293b; }
+.log { font-family: monospace; font-size:12px; }
+.progress { height:6px; background:#1e293b; }
+.progress-bar { height:6px; background:#3b82f6; }
+</style>
+</head>
+
+<body x-data="app()" class="flex h-screen">
+
+<!-- SIDEBAR -->
+<div class="sidebar w-64 p-4">
+<h1 class="text-xl font-bold mb-6">Agent Explore IA v2</h1>
+<nav class="space-y-2">
+<button @click="tab='dashboard'">Dashboard</button>
+<button @click="tab='leads'">Leads</button>
+<button @click="tab='agent'">Agent IA</button>
+<button @click="tab='settings'">Paramètres</button>
+</nav>
+</div>
+
+<!-- MAIN -->
+<div class="flex-1 p-6 overflow-auto">
+
+<h2 class="text-2xl font-bold mb-2">Agent Explore IA v2 – Croisement réel</h2>
+
+<div class="bg-yellow-900 text-yellow-200 p-3 rounded mb-4 text-sm">
+Données open data (DVF + Sitadel). Non temps réel. RGPD respecté.
+</div>
+
+<div class="progress mb-4">
+<div class="progress-bar" :style="'width:'+progress+'%'"></div>
+</div>
+
+<!-- DASHBOARD -->
+<div x-show="tab==='dashboard'">
+
+<div class="grid grid-cols-4 gap-4 mb-6">
+<div class="card p-4"><h3>DVF 30j</h3><p x-text="kpi.dvf"></p></div>
+<div class="card p-4"><h3>Permis</h3><p x-text="kpi.permis"></p></div>
+<div class="card p-4"><h3>Matchs</h3><p x-text="kpi.matchs"></p></div>
+<div class="card p-4"><h3>Leads qualifiés</h3><p x-text="leads.length"></p></div>
+</div>
+
+<canvas id="chart"></canvas>
+
+</div>
+
+<!-- LEADS -->
+<div x-show="tab==='leads'">
+
+<button @click="runPipeline()" class="bg-blue-600 px-3 py-2 mb-4">Pipeline complet</button>
+
+<input x-model="search" placeholder="Recherche..." class="p-2 text-black mb-4">
+
+<table class="w-full text-sm">
+<thead>
+<tr>
+<th>Date</th><th>Adresse</th><th>Type</th><th>Surface</th><th>Prix</th><th>Score</th><th>Potentiel</th>
+</tr>
+</thead>
+<tbody>
+<template x-for="l in filteredLeads()" :key="l.id">
+<tr>
+<td x-text="l.date"></td>
+<td x-text="l.address"></td>
+<td x-text="l.type"></td>
+<td x-text="l.surface"></td>
+<td x-text="l.price"></td>
+<td x-text="l.score"></td>
+<td x-text="l.potential"></td>
+</tr>
+</template>
+</tbody>
+</table>
+
+</div>
+
+<!-- AGENT -->
+<div x-show="tab==='agent'">
+
+<button @click="runPipeline()" class="bg-green-600 px-3 py-2 mb-4">▶ Lancer Agent IA</button>
+
+<div class="card p-4 h-64 overflow-auto log">
+<template x-for="log in logs">
+<div x-text="log"></div>
+</template>
+</div>
+
+</div>
+
+<!-- SETTINGS -->
+<div x-show="tab==='settings'">
+
+<label>Département</label>
+<input x-model="dept" class="p-2 text-black mb-2">
+
+<button @click="exportCSV()" class="bg-blue-600 px-3 py-2">Exporter CSV</button>
+
+</div>
+
+</div>
+
+<script>
+function app(){
+return{
+
+tab:'dashboard',
+dvf:[],
+urbanisme:[],
+leads:[],
+logs:[],
+search:'',
+dept:'',
+progress:0,
+
+kpi:{dvf:0, permis:0, matchs:0},
+
+log(m){ this.logs.push("👉 "+m); },
+
+async fetchDataset(id){
+let res = await fetch(`https://www.data.gouv.fr/api/1/datasets/${id}`);
+let data = await res.json();
+return data.resources[0].url;
+},
+
+parseCSV(url, target){
+return new Promise(resolve=>{
+Papa.parse(url,{
+download:true,
+header:true,
+step:(row)=>{
+if(this[target].length<1500){
+this[target].push(row.data);
+this.progress++;
+}
+},
+complete:()=>resolve()
+});
+});
+},
+
+normalizeAddress(a){
+return (a||'').toLowerCase().replace(/\s/g,'');
+},
+
+async loadDVF(){
+this.dvf=[];
+let url = await this.fetchDataset("dvf-open-data");
+await this.parseCSV(url,'dvf');
+
+this.dvf = this.dvf.filter(d=>{
+let date = new Date(d.date_mutation);
+return date > new Date(Date.now()-30*86400000);
+});
+
+this.kpi.dvf = this.dvf.length;
+},
+
+async loadUrbanisme(){
+this.urbanisme=[];
+let url = await this.fetchDataset("base-des-permis-de-construire-et-autres-autorisations-durbanisme");
+await this.parseCSV(url,'urbanisme');
+
+this.kpi.permis = this.urbanisme.length;
+},
+
+crossData(){
+
+this.log("Croisement intelligent...");
+
+let matches=[];
+
+this.dvf.forEach(d=>{
+let addr1 = this.normalizeAddress(d.adresse_nom_voie);
+
+this.urbanisme.forEach(u=>{
+let addr2 = this.normalizeAddress(u.adresse);
+
+if(addr1 && addr2 && addr1.includes(addr2)){
+matches.push({dvf:d, urb:u});
+}
+});
+});
+
+this.kpi.matchs = matches.length;
+return matches;
+},
+
+buildLeads(matches){
+
+this.leads = matches.map(m=>{
+
+let d=m.dvf;
+let u=m.urb;
+
+let surface = parseFloat(d.surface_reelle_bati||0);
+let price = parseFloat(d.valeur_fonciere||0);
+
+let score=0;
+
+// scoring avancé
+if(surface>120) score+=25;
+if(price>400000) score+=25;
+if(u.type_dossier && u.type_dossier.includes('PC')) score+=30;
+if(u.nature_travaux && u.nature_travaux.toLowerCase().includes('extension')) score+=20;
+
+let potential = score>70 ? "🔥 Fort" : score>40 ? "⚡ Moyen" : "❄️ Faible";
+
+return{
+date:d.date_mutation,
+address:(d.adresse_numero||'')+" "+d.adresse_nom_voie,
+type:u.type_dossier,
+surface,
+price,
+score,
+potential
+};
+
+});
+
+},
+
+buildChart(){
+
+let map={};
+
+this.leads.forEach(l=>{
+if(!map[l.date]) map[l.date]=0;
+map[l.date]++;
+});
+
+new Chart(document.getElementById('chart'),{
+type:'bar',
+data:{
+labels:Object.keys(map),
+datasets:[{label:'Leads', data:Object.values(map)}]
+}
+});
+
+},
+
+async runPipeline(){
+
+this.logs=[];
+this.progress=0;
+
+this.log("Agent IA v2 démarré");
+
+await this.loadDVF();
+this.progress=30;
+
+await this.loadUrbanisme();
+this.progress=60;
+
+let matches = this.crossData();
+this.progress=80;
+
+this.buildLeads(matches);
+
+this.buildChart();
+
+this.progress=100;
+
+this.log("Pipeline terminé");
+
+},
+
+filteredLeads(){
+return this.leads.filter(l =>
+JSON.stringify(l).toLowerCase().includes(this.search.toLowerCase())
+);
+},
+
+exportCSV(){
+let csv = Papa.unparse(this.leads);
+let blob = new Blob([csv]);
+let a = document.createElement('a');
+a.href = URL.createObjectURL(blob);
+a.download="leads.csv";
+a.click();
+}
+
+}
+}
+</script>
+
+</body>
+</html>
+```
